@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PurpleVerse 💜</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js"></script>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <h1>💜 PurpleVerse</h1>
+        <p>Where ARMYs Connect</p>
+    </header>
+
+    <!-- LOGIN SECTION -->
+    <section id="login-section">
+        <div class="login-box">
+            <h2>Sign In</h2>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="signIn()">Login</button>
+            <p>Don’t have an account? <button onclick="signUp()">Sign Up</button></p>
+        </div>
+    </section>
+
+    <!-- MAIN APP SECTION -->
+    <section id="app-section" style="display:none;">
+        <div class="post-box">
+            <textarea id="post-content" placeholder="What's on your mind, ARMY? 💜"></textarea>
+            <button onclick="createPost()">Post</button>
+        </div>
+        <div id="feed" class="feed"></div>
+        <button onclick="signOut()">Sign Out</button>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>Made with 💜 for ARMYs</p>
+    </footer>
+
+    <script>
+        // 🔹 Your Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Sign Up
+        function signUp() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => alert("Welcome to PurpleVerse!"))
+                .catch(error => alert(error.message));
+        }
+
+        // Sign In
+        function signIn() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    document.getElementById('login-section').style.display = 'none';
+                    document.getElementById('app-section').style.display = 'block';
+                    loadPosts();
+                })
+                .catch(error => alert(error.message));
+        }
+
+        // Sign Out
+        function signOut() {
+            auth.signOut().then(() => {
+                document.getElementById('login-section').style.display = 'block';
+                document.getElementById('app-section').style.display = 'none';
+            });
+        }
+
+        // Create Post
+        function createPost() {
+            const content = document.getElementById('post-content').value;
+            if (content.trim() === "") return;
+            db.collection("posts").add({
+                content: content,
+                timestamp: new Date(),
+                user: auth.currentUser.email
+            }).then(() => {
+                document.getElementById('post-content').value = "";
+                loadPosts();
+            });
+        }
+
+        // Load Posts
+        function loadPosts() {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = "";
+            db.collection("posts").orderBy("timestamp", "desc").get()
+                .then(snapshot => {
+                    snapshot.forEach(doc => {
+                        const post = doc.data();
+                        const postElement = document.createElement('div');
+                        postElement.classList.add('post');
+                        postElement.innerHTML = <strong>${post.user}</strong><p>${post.content}</p>;
+                        feed.appendChild(postElement);
+                    });
+                });
+        }
+    </script>
+</body>
+</html>
